@@ -1,16 +1,25 @@
 {
-  "name": "my-node-app",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "start": "node ./bin/www"
-  },
-  "dependencies": {
-    "cookie-parser": "~1.4.4",
-    "debug": "~2.6.9",
-    "express": "~4.16.1",
-    "http-errors": "~1.6.3",
-    "jade": "~1.11.0",
-    "morgan": "~1.9.1"
-  }
+   "name": "my-node-app",
+   "version": "0.0.0",
+   "private": true,
+   "scripts": {
+      "start": "ts-node src/index.ts"
+   },
+   "dependencies": {
+      "cookie-parser": "~1.4.4",
+      "debug": "~2.6.9",
+      "express": "~4.16.1",
+      "http-errors": "~1.6.3",
+      "jade": "~1.11.0",
+      "morgan": "~1.9.1",
+      "pg": "^8.2.1",
+      "typeorm": "0.2.25",
+      "reflect-metadata": "^0.1.10",
+      "mysql": "^2.14.1"
+   },
+   "devDependencies": {
+      "ts-node": "3.3.0",
+      "@types/node": "^8.0.29",
+      "typescript": "3.3.3333"
+   }
 }
