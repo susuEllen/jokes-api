@@ -1,48 +1,23 @@
-const typeorm = require("typeorm"); // import * as typeorm from "typeorm";
-const Post = require("./model/Post").Post; // import {Post} from "./model/Post";
-const Category = require("./model/Category").Category; // import {Category} from "./model/Category";
+const typeorm = require("typeorm");
+const Joke = require("./model/Joke");
 
-typeorm.createConnection({
-    type: "mysql",
-    host: "localhost",
-    port: 3306,
-    username: "test",
-    password: "test",
-    database: "test",
-    synchronize: true,
-    logging: false,
-    entities: [
-        require("./entity/PostSchema"),
-        require("./entity/CategorySchema")
-    ]
-}).then(function (connection) {
+let connection;
 
-    const category1 = new Category(0, "TypeScript");
-    const category2 = new Category(0, "Programming");
+const initDb = async () => {
+    connection = await typeorm.createConnection();
+    return
+}
 
-    return connection
-        .manager
-        .save([category1, category2])
-        .then(() => {
+const saveJoke = async () => {
+    const joke1 = new Joke(0, "somejoke");
+    await connection.manager.save([joke1]);
+}
 
-            let post = new Post();
-            post.title = "Control flow based type analysis";
-            post.text = "TypeScript 2.0 implements a control flow-based type analysis for local variables and parameters.";
-            post.categories = [category1, category2];
+const saveCustomJoke = async (inputText) => {
+    const customJoke = new Joke(1, inputText);
+    await connection.manager.save([customJoke]);
+}
 
-            let postRepository = connection.getRepository(Post);
-            postRepository.save(post)
-                .then(function(savedPost) {
-                    console.log("Post has been saved: ", savedPost);
-                    console.log("Now lets load all posts: ");
-
-                    return postRepository.find();
-                })
-                .then(function(allPosts) {
-                    console.log("All posts: ", allPosts);
-                });
-        });
-
-}).catch(function(error) {
-    console.log("Error: ", error);
-});
+module.exports = {
+    initDb, saveJoke, saveCustomJoke
+}

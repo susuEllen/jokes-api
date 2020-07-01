@@ -1,4 +1,4 @@
-/*export */ class Joke {
+class Joke {
     constructor(id, content, img_url, created_at) {
         this.id = id;
         this.content = content;
@@ -7,6 +7,4 @@
     }
 }
 
-module.exports = {
-    Category: Category
-};
+module.exports = Joke;
