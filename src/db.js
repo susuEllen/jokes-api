@@ -15,9 +15,15 @@ const saveJoke = async () => {
 
 const saveCustomJoke = async (inputText) => {
     const customJoke = new Joke(1, inputText);
+    console.log("about to save this joke\t" + customJoke)
+
     await connection.manager.save([customJoke]);
 }
 
+const deleteLastJoke = async() => {
+    await connection.manager.query(`delete from joke where id = (select max(id) from joke)`);
+}
+
 module.exports = {
-    initDb, saveJoke, saveCustomJoke
+    initDb, saveJoke, saveCustomJoke,deleteLastJoke
 }
