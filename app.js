@@ -1,3 +1,5 @@
+require('dotenv').config({path: __dirname + '/.env'})
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -9,7 +11,37 @@ var usersRouter = require('./routes/users');
 var apiRouter = require('./routes/api')
 
 
+//const PORT = process.env.PORT || 3000
+
 var app = express();
+
+// Code added to connect this express app to slack app
+
+const token = process.env.BOT_TOKEN
+
+// Allows our app to receive messages that occur on channels
+// that it has been added to.
+// At the moment, the app will simply console.log anything that comes in.
+const eventsApi = require('@slack/events-api')
+const slackEvents = eventsApi.createEventAdapter(process.env.SIGNING_SECRET)
+
+// allow our app to respond to some (or all) of those messages.
+const { WebClient, LogLevel } = require("@slack/web-api");
+const client = new WebClient(token, {
+    logLevel: LogLevel.DEBUG
+});
+
+app.use('/', slackEvents.expressMiddleware())
+slackEvents.on("message", async(event) => {
+    console.log(event)
+})
+
+//This sets up an express server that runs on localhost:3000 
+//TODO: set a PORT in your .env file
+app.listen(3000, () => {
+  console.log(`App listening at http://localhost:3000`)
+  //console.log(`App listening at http://localhost:${PORT}`)
+})
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
