@@ -34,6 +34,18 @@ const client = new WebClient(token, {
 app.use('/', slackEvents.expressMiddleware())
 slackEvents.on("message", async(event) => {
     console.log(event)
+    if(!event.subtype && !event.bot_id)
+        //TODO: can you get a different message from generate openai api 
+        //callGenerateAPI(event)
+
+        // this post a default message "hello world"
+        client.chat.postMessage({
+            token, 
+            channel: event.channel, 
+            thread_ts: event.ts, 
+            text: "Hello World!"
+        })
+    
 })
 
 //This sets up an express server that runs on localhost:3000 
@@ -42,6 +54,36 @@ app.listen(3000, () => {
   console.log(`App listening at http://localhost:3000`)
   //console.log(`App listening at http://localhost:${PORT}`)
 })
+
+// WIP call open AI API
+async function callGenerateAPI(event) {
+  try {
+    const response = await fetch("/routes/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: event.text
+    });
+
+    const data = await response.json();
+    if (response.status !== 200) {
+      throw data.error || new Error(`Request failed with status ${response.status}`);
+    }
+
+    setResult(data.result);
+  } catch(error) {
+    // Consider implementing your own error handling logic here
+    console.error(error);
+    alert(error.message);
+  }
+}
+
+// END WIP
+
+
+
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
