@@ -19,7 +19,6 @@ var app = express();
 const token = process.env.BOT_TOKEN;
 
 // Allows our app to receive messages that occur on channels
-// that it has been added to.
 // At the moment, the app will simply console.log anything that comes in.
 const eventsApi = require("@slack/events-api");
 const slackEvents = eventsApi.createEventAdapter(process.env.SIGNING_SECRET);
@@ -30,7 +29,7 @@ const client = new WebClient(token, {
   logLevel: LogLevel.DEBUG,
 });
 
-app.use("/", slackEvents.expressMiddleware());
+app.use("/slack", slackEvents.expressMiddleware());
 
 slackEvents.on("message", async (event) => {
   console.log(event);
@@ -55,26 +54,6 @@ app.listen(3000, () => {
   console.log(`App listening at http://localhost:3000`);
   //console.log(`App listening at http://localhost:${PORT}`)
 });
-
-// WIP call open AI API
-// async function callGenerateAPI(event) {
-//   try {
-//     const response = await generate(event.text);
-
-//     const data = await response.json();
-//     if (response.status !== 200) {
-//       throw data.error || new Error(`Request failed with status ${response.status}`);
-//     }
-
-//     setResult(data.result);
-//   } catch(error) {
-//     // Consider implementing your own error handling logic here
-//     console.error(error);
-//     alert(error.message);
-//   }
-// }
-
-// END WIP
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
