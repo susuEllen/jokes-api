@@ -13,6 +13,10 @@ var apiRouter = require("./routes/api");
 //const PORT = process.env.PORT || 3000
 
 var app = express();
+app.use("/health", (req, res, next) => {
+  res.status(200);
+  res.send("OK");
+});
 
 // Code added to connect this express app to slack app
 
@@ -35,6 +39,14 @@ slackEvents.on("message", async (event) => {
   console.log(event);
   if (!event.subtype && !event.bot_id) {
     //TODO: can you get a different message from generate openai api
+    history = await client.conversations.history({
+      token,
+      channel: event.channel,
+      limit: 3,
+    });
+
+    console.log(history);
+
     smartResponse = await generate(event.text);
     // this post a default message "hello world"
     console.log("post another message");
