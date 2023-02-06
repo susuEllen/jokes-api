@@ -10,15 +10,14 @@ var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var apiRouter = require("./routes/api");
 
-//const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
+const BOT_ID = "B04LLKT2R5M";
 
 var app = express();
 app.use("/health", (req, res, next) => {
   res.status(200);
   res.send("OK");
 });
-
-// Code added to connect this express app to slack app
 
 const token = process.env.BOT_TOKEN;
 
@@ -32,39 +31,61 @@ const { WebClient, LogLevel } = require("@slack/web-api");
 const client = new WebClient(token, {
   logLevel: LogLevel.DEBUG,
 });
-
+app.use("/slack", indexRouter);
 app.use("/slack", slackEvents.expressMiddleware());
+
+slackEvents.on("error", async (err) => {
+  console.error(err);
+  return "fail";
+});
 
 slackEvents.on("message", async (event) => {
   console.log(event);
+
+  //TODO:
+  // There is a bug here where its not aggregating the right messages before it send to open ai API
+  //
   if (!event.subtype && !event.bot_id) {
     //TODO: can you get a different message from generate openai api
-    history = await client.conversations.history({
+    history = await client.conversations.replies({
       token,
+      ts: event.thread_ts || event.ts,
       channel: event.channel,
-      limit: 3,
+      limit: 100,
     });
 
-    console.log(history);
+    appendMessage = history.messages
+      .map((message) => {
+        message.text;
+      })
+      .join("\n");
 
-    smartResponse = await generate(event.text);
-    // this post a default message "hello world"
-    console.log("post another message");
+    console.log(">>>>\nappendMessage\n" + appendMessage + "\n>>>>\n");
 
-    client.chat.postMessage({
-      token,
-      channel: event.channel,
-      thread_ts: event.ts,
-      text: smartResponse,
-    });
+    smartResponse = await generate(appendMessage);
+    console.log(">>>>\npost another message\n>>>>");
+
+    if (smartResponse) {
+      client.chat.postMessage({
+        token,
+        channel: event.channel,
+        thread_ts: event.ts,
+        text: smartResponse,
+      });
+    } else {
+      client.chat.postMessage({
+        token,
+        channel: event.channel,
+        thread_ts: event.ts,
+        text: "Open AI is busy at the moment",
+      });
+    }
   }
 });
 
 //This sets up an express server that runs on localhost:3000
-//TODO: set a PORT in your .env file
 app.listen(3000, () => {
-  console.log(`App listening at http://localhost:3000`);
-  //console.log(`App listening at http://localhost:${PORT}`)
+  console.log(`App listening at http://localhost:${PORT}`);
 });
 
 // view engine setup
@@ -79,6 +100,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 //order here is significant, each of these is installing a middleware
 app.use("/", indexRouter);
+
 app.use("/users", usersRouter);
 app.use("/api", apiRouter); // this makes it /api/xxx in the calling path
 
