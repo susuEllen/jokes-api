@@ -47,23 +47,49 @@ slackEvents.on("message", async (event) => {
   //
   if (!event.subtype && !event.bot_id) {
     //TODO: can you get a different message from generate openai api
-    history = await client.conversations.replies({
+
+    // replies only has the reply
+    replies = await client.conversations.replies({
       token,
       ts: event.thread_ts || event.ts,
       channel: event.channel,
       limit: 100,
     });
 
-    appendMessage = history.messages
-      .map((message) => {
-        message.text;
-      })
+    const conversationReplies = replies.messages
+      .filter((message) => message.bot_id != BOT_ID)
+      .map((message) => message.text)
       .join("\n");
+    console.log(
+      ">>>>\n Conversations Replies\n" + conversationReplies + "\n>>>>\n"
+    );
 
-    console.log(">>>>\nappendMessage\n" + appendMessage + "\n>>>>\n");
+    // this seems to just grab last 10 messages within the thread or not
+    // history = await client.conversations.history({
+    //   token,
+    //   ts: event.thread_ts,
+    //   channel: event.channel,
+    //   limit: 10,
+    // });
+    // console.log(
+    //   ">>>>\n Conversations history\n" +
+    //     history.messages.map((message) => message.text).join("\n") +
+    //     "\n>>>>\n"
+    // );
+    // appendMessage = history.messages
+    //   .map((message) => {
+    //     message.text;
+    //   })
+    //   .join("\n");
 
-    smartResponse = await generate(appendMessage);
-    console.log(">>>>\npost another message\n>>>>");
+    //console.log(">>>>\nappendMessage\n" + appendMessage + "\n>>>>\n");
+    //TODO: debug why append Message is not doing the right thing before swapping smartResponse
+    //smartResponse = await generate(appendMessage);
+
+    //smartResponse = await generate(event.text);
+
+    smartResponse = await generate(conversationReplies);
+    console.log(">>>>\npost another message\nsmartResponse\n>>>>");
 
     if (smartResponse) {
       client.chat.postMessage({

@@ -11,7 +11,7 @@ module.exports = async function (inputmessage) {
   try {
     const completion = await openai.createCompletion({
       model: "text-davinci-003",
-      prompt: generatePrompt(inputmessage, "sassy"),
+      prompt: generatePrompt(inputmessage, "quirky"),
       temperature: 0.6,
       max_tokens: 1000,
     });
@@ -36,6 +36,6 @@ module.exports = async function (inputmessage) {
 };
 
 function generatePrompt(inputmessage, personality) {
-  const prompt = `You are chat bot. Your personality is ${personality}. Respond something funny to this message ${inputmessage}`;
+  const prompt = `You are a personal assistant bot. Your personality is ${personality}. Respond something funny to this message ${inputmessage}`;
   return prompt;
 }
