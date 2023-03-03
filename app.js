@@ -12,12 +12,14 @@ var apiRouter = require("./routes/api");
 
 const PORT = process.env.PORT || 3000;
 const BOT_ID = "B04LLKT2R5M";
-
+const botUserId = "U04M3KY743E";
 var app = express();
 app.use("/health", (req, res, next) => {
   res.status(200);
   res.send("OK");
 });
+
+// PROD URL: https://buddy-ai.onrender.com/slack
 
 const token = process.env.BOT_TOKEN;
 
@@ -55,11 +57,12 @@ slackEvents.on("message", async (event) => {
       channel: event.channel,
       limit: 100,
     });
-
+    console.log(JSON.stringify(replies.messages, undefined, 2));
     const conversationReplies = replies.messages
       .filter((message) => message.bot_id != BOT_ID)
       .map((message) => message.text)
       .join("\n");
+
     console.log(
       ">>>>\n Conversations Replies\n" + conversationReplies + "\n>>>>\n"
     );
@@ -87,8 +90,14 @@ slackEvents.on("message", async (event) => {
     //smartResponse = await generate(appendMessage);
 
     //smartResponse = await generate(event.text);
+    console.log(event.user);
+    if (!conversationReplies.includes(botUserId)) {
+      console.log("Skipping message, not for us");
+      return;
+    }
 
     smartResponse = await generate(conversationReplies);
+
     console.log(">>>>\npost another message\nsmartResponse\n>>>>");
 
     if (smartResponse) {
