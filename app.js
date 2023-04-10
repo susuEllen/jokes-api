@@ -40,6 +40,7 @@ slackEvents.on("error", async (err) => {
   console.error(err);
   return "fail";
 });
+// test checking in a comment
 
 slackEvents.on("message", async (event) => {
   console.log(event);
