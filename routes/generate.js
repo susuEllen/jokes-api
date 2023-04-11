@@ -7,11 +7,11 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-module.exports = async function (inputmessage) {
+module.exports = async function (inputmessage, choice) {
   try {
     const completion = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: generatePrompt(inputmessage, "quirky"),
+      model: "text-davinci-003", // are there other ones to use. chatGPT trained on alot of conversations.
+      prompt: generatePrompt(inputmessage, choice),
       temperature: 0.6,
       max_tokens: 1000,
     });
@@ -35,7 +35,23 @@ module.exports = async function (inputmessage) {
   }
 };
 
-function generatePrompt(inputmessage, personality) {
-  const prompt = `You are a personal assistant bot. Your personality is ${personality}. Respond something funny to this message ${inputmessage}`;
-  return prompt;
+function generatePrompt(inputmessage, choice) {
+  console.log(
+    `***********\nabout to generate prompt, Choice is ${choice}\n***************`
+  );
+  // have 3 prompts, diffferent kind of personality or expertise in assitant bot
+  const prompt1 = `You are a health coach. You have 10 years of experience helping people develope health habits. You believe daily habits is key to success in building healthy habits. Your personality is positive and encouraging. 
+  Ask up to 2 questions if you dont have enough information. Respond something helpful to this message ${inputmessage}. `;
+  const prompt2 = `You are an old friend. You've know the person since college. You are wise, funny but not judgemental. Always ask questions first to get more information. Respond something comforting to this message ${inputmessage}. `;
+  const promptDefault = `You are a personal assistant bot. Your personality is quirky. Respond something funny to this message ${inputmessage}`;
+
+  switch (choice) {
+    case "coach":
+      return prompt1;
+    case "friend":
+      return prompt2;
+
+    default:
+      return promptDefault;
+  }
 }

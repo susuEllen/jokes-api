@@ -11,6 +11,8 @@ var usersRouter = require("./routes/users");
 var apiRouter = require("./routes/api");
 
 const PORT = process.env.PORT || 3000;
+//TODO: Need to figure out where to park this, if we want to install this in dev/ staging.
+// e.g. need to figure out to install this to multiple slack
 const BOT_ID = "B04LLKT2R5M";
 const botUserId = "U04M3KY743E";
 var app = express();
@@ -22,6 +24,7 @@ app.use("/health", (req, res, next) => {
 // PROD URL: https://buddy-ai.onrender.com/slack
 
 const token = process.env.BOT_TOKEN;
+choice = "";
 
 // Allows our app to receive messages that occur on channels
 // At the moment, the app will simply console.log anything that comes in.
@@ -40,7 +43,6 @@ slackEvents.on("error", async (err) => {
   console.error(err);
   return "fail";
 });
-// test checking in a comment
 
 slackEvents.on("message", async (event) => {
   console.log(event);
@@ -61,6 +63,7 @@ slackEvents.on("message", async (event) => {
     console.log(JSON.stringify(replies.messages, undefined, 2));
     const conversationReplies = replies.messages
       .filter((message) => message.bot_id != BOT_ID)
+      .filter((message) => !message.text.startsWith("switch to"))
       .map((message) => message.text)
       .join("\n");
 
@@ -97,7 +100,14 @@ slackEvents.on("message", async (event) => {
       return;
     }
 
-    smartResponse = await generate(conversationReplies);
+    if (event.text.toLowerCase().includes("switch to")) {
+      choice = event.text.split("switch to")[1].trim();
+      console.log(
+        `***********\n user wants to switch to ${choice}***********\n `
+      );
+    }
+
+    smartResponse = await generate(conversationReplies, choice);
 
     console.log(">>>>\npost another message\nsmartResponse\n>>>>");
 
