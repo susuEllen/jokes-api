@@ -47,28 +47,46 @@ slackEvents.on("error", async (err) => {
 slackEvents.on("message", async (event) => {
   console.log(event);
 
-  //TODO:
-  // There is a bug here where its not aggregating the right messages before it send to open ai API
-  //
   if (!event.subtype && !event.bot_id) {
-    //TODO: can you get a different message from generate openai api
-
-    // replies only has the reply
+    // Only grab replies
     replies = await client.conversations.replies({
       token,
       ts: event.thread_ts || event.ts,
       channel: event.channel,
       limit: 100,
     });
+
     console.log(JSON.stringify(replies.messages, undefined, 2));
-    const conversationReplies = replies.messages
-      .filter((message) => message.bot_id != BOT_ID)
-      .filter((message) => !message.text.startsWith("switch to"))
-      .map((message) => message.text)
-      .join("\n");
+    // const conversationReplies = replies.messages
+    //   .filter((message) => message.bot_id != BOT_ID)
+    //   .filter((message) => !message.text.startsWith("switch to"))
+    //   .map((message) => message.text)
+    //   .join("\n");
+
+    //TODO: improve this by looking up the user slack name to put as user instead of the ID.
+    /*
+      Conversations Replies
+    [{"role":"U37T7TB0F","content":"<@U04M3KY743E> testing monday morning"},{"role":"U04M3KY743E","content":"( "},{"role":"U37T7TB0F","content":"good morning"}]
+    */
+    // what it is now in prompt.
+    //<U37T7TB0F>: jellybean!
+    //<U04M3KY743E>:  Nope, try again!
+    //<U013B333UQ6>: red bull
+    // how to make it response to people directly by name, not some random ID.
+    //<U04M3KY743E>:  Your name is @U013B333UQ6.
+    //<U013B333UQ6>: say <@U013B333UQ6>
+    // <U04M3KY743E>:   Hi there, <@U013B333UQ6>!
+
+    const conversationReplies = replies.messages.map((message) => ({
+      role: message.user.includes(botUserId) ? "assistant" : "user",
+      name: message.user.includes(botUserId) ? "Buddy" : message.user,
+      content: message.text,
+    }));
 
     console.log(
-      ">>>>\n Conversations Replies\n" + conversationReplies + "\n>>>>\n"
+      ">>>>\n Conversations Replies\n" +
+        JSON.stringify(conversationReplies) +
+        "\n>>>>\n"
     );
 
     // this seems to just grab last 10 messages within the thread or not
@@ -95,23 +113,29 @@ slackEvents.on("message", async (event) => {
 
     //smartResponse = await generate(event.text);
     console.log(event.user);
-    if (!conversationReplies.includes(botUserId)) {
+    //var conversationRepliesJSON = JSON.stringify(replies.messages);
+    var lastMessage = replies.messages[replies.messages.length - 1];
+    var lastMessagedUser = lastMessage["user"];
+
+    console.log("lastMessage: " + JSON.stringify(lastMessage));
+    console.log("lastMessagedUser: " + lastMessagedUser);
+
+    if (lastMessagedUser.includes(botUserId)) {
       console.log("Skipping message, not for us");
       return;
     }
 
-    if (event.text.toLowerCase().includes("switch to")) {
-      choice = event.text.split("switch to")[1].trim();
-      console.log(
-        `***********\n user wants to switch to ${choice}***********\n `
-      );
-    }
-
-    smartResponse = await generate(conversationReplies, choice);
-
-    console.log(">>>>\npost another message\nsmartResponse\n>>>>");
+    smartResponse = await generate(conversationReplies);
+    console.log(">>>>\nsmartResponse\n" + smartResponse + "\n>>>>\n");
 
     if (smartResponse) {
+      // if (smartResponse.includes(":")) {
+      //   smartResponse = smartResponse.split(":", 2)[1];
+      // }
+      // smartResponse = smartResponse.replace(/<(U[^>]+)>/, "<@$1>");
+
+      //<U37T7TB0F>: <@U04M3KY743E> create a riddle where the answer is “cottonball”, let people guess, do not share the answer untill 5 guesses or until someone guess “cottonball”.
+
       client.chat.postMessage({
         token,
         channel: event.channel,
