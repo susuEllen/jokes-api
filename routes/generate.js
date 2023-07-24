@@ -6,10 +6,9 @@ const openai = new OpenAIApi(configuration);
 module.exports = async function (inputMessageJSON) {
   try {
     console.log("inputMessageJSON: " + JSON.stringify(inputMessageJSON));
-    //TODO: format messages into role and content
-    const inputMessages = formatPromptInRoleAndContent(inputMessageJSON);
+    const inputMessages = formatInputMessagesInRoleAndContent(inputMessageJSON);
     console.log(
-      "\n\n ****** formatPromptInRoleAndContent: ****\n\n " +
+      "\n\n ****** formatInputMessagesInRoleAndContent: ****\n\n " +
         JSON.stringify(inputMessages)
     );
     const completion = await openai.createChatCompletion({
@@ -34,7 +33,7 @@ module.exports = async function (inputMessageJSON) {
 };
 
 //TODO: format this into format with role and content
-function formatPromptInRoleAndContent(inputmessage) {
+function formatInputMessagesInRoleAndContent(inputmessage) {
   const selectedSystemPrompt = selectSystemPrompt(inputmessage);
 
   const systemContent = {
@@ -49,7 +48,7 @@ function selectSystemPrompt(inputmessage) {
   // const promptCoach = `You are a health coach. You have 10 years of experience helping people develope health habits. You believe daily habits is key to success in building healthy habits. Your personality is positive and encouraging.
   //  Ask up to 2 questions if you dont have enough information. Respond something helpful to this message ${inputmessage}. `;
   // const promptFriend = `You are an old friend. You've know the person since college. You are wise, funny but not judgemental. Always ask questions first to get more information. Respond something comforting to this message ${inputmessage}. `;
-  const promptAssistant = `You are a personal assistant bot. Your personality is quirky. You always something funny to messages. You address each message by the user's name. Respond something funny to this message ${inputmessage} `;
+  const promptAssistant = `You are a personal assistant bot. Your personality is quirky. You always something funny to messages. You address each message by the user's name. Respond something funny to`;
   // const promptSnarkyPuzzleBot = `You are a cryptic and mysterious puzzle master bot. Your personality is mysterious. Respond something snarky to this message, always address the message to name by the sender's name ${inputmessage}`;
   const promptDefault = promptAssistant;
   return promptDefault;

@@ -12,7 +12,6 @@ var apiRouter = require("./routes/api");
 
 const PORT = process.env.PORT || 3000;
 //TODO: Need to figure out where to park this, if we want to install this in dev/ staging.
-// e.g. need to figure out to install this to multiple slack
 const BOT_ID = "B04LLKT2R5M";
 const botUserId = "U04M3KY743E";
 var app = express();
@@ -21,13 +20,11 @@ app.use("/health", (req, res, next) => {
   res.send("OK");
 });
 
-// PROD URL: https://buddy-ai.onrender.com/slack
-
 const token = process.env.BOT_TOKEN;
+const userIDToNameMap = new Map();
 choice = "";
 
 // Allows our app to receive messages that occur on channels
-// At the moment, the app will simply console.log anything that comes in.
 const eventsApi = require("@slack/events-api");
 const slackEvents = eventsApi.createEventAdapter(process.env.SIGNING_SECRET);
 
@@ -57,31 +54,22 @@ slackEvents.on("message", async (event) => {
     });
 
     console.log(JSON.stringify(replies.messages, undefined, 2));
-    // const conversationReplies = replies.messages
-    //   .filter((message) => message.bot_id != BOT_ID)
-    //   .filter((message) => !message.text.startsWith("switch to"))
-    //   .map((message) => message.text)
-    //   .join("\n");
 
-    //TODO: improve this by looking up the user slack name to put as user instead of the ID.
-    /*
-      Conversations Replies
-    [{"role":"U37T7TB0F","content":"<@U04M3KY743E> testing monday morning"},{"role":"U04M3KY743E","content":"( "},{"role":"U37T7TB0F","content":"good morning"}]
-    */
-    // what it is now in prompt.
-    //<U37T7TB0F>: jellybean!
-    //<U04M3KY743E>:  Nope, try again!
-    //<U013B333UQ6>: red bull
-    // how to make it response to people directly by name, not some random ID.
-    //<U04M3KY743E>:  Your name is @U013B333UQ6.
-    //<U013B333UQ6>: say <@U013B333UQ6>
-    // <U04M3KY743E>:   Hi there, <@U013B333UQ6>!
-
-    const conversationReplies = replies.messages.map((message) => ({
-      role: message.user.includes(botUserId) ? "assistant" : "user",
-      name: message.user.includes(botUserId) ? "Buddy" : message.user,
-      content: message.text,
-    }));
+    // If ID is bot ID, its buddy, otherwise its user with name of the user's ID.
+    const conversationReplies = [];
+    for (var i = 0; i < replies.messages.length; i++) {
+      var message = replies.messages[i];
+      var replyMessage = { content: replies.messages[i].text };
+      if (message.user.includes(botUserId)) {
+        replyMessage.role = "assistant";
+        replyMessage.name = "Buddy";
+      } else {
+        replyMessage.role = "user";
+        replyMessage.name =
+          (await lookupNamesFromIDInMap(message.user)) || message.user;
+      }
+      conversationReplies.push(replyMessage);
+    }
 
     console.log(
       ">>>>\n Conversations Replies\n" +
@@ -89,31 +77,7 @@ slackEvents.on("message", async (event) => {
         "\n>>>>\n"
     );
 
-    // this seems to just grab last 10 messages within the thread or not
-    // history = await client.conversations.history({
-    //   token,
-    //   ts: event.thread_ts,
-    //   channel: event.channel,
-    //   limit: 10,
-    // });
-    // console.log(
-    //   ">>>>\n Conversations history\n" +
-    //     history.messages.map((message) => message.text).join("\n") +
-    //     "\n>>>>\n"
-    // );
-    // appendMessage = history.messages
-    //   .map((message) => {
-    //     message.text;
-    //   })
-    //   .join("\n");
-
-    //console.log(">>>>\nappendMessage\n" + appendMessage + "\n>>>>\n");
-    //TODO: debug why append Message is not doing the right thing before swapping smartResponse
-    //smartResponse = await generate(appendMessage);
-
-    //smartResponse = await generate(event.text);
     console.log(event.user);
-    //var conversationRepliesJSON = JSON.stringify(replies.messages);
     var lastMessage = replies.messages[replies.messages.length - 1];
     var lastMessagedUser = lastMessage["user"];
 
@@ -191,3 +155,13 @@ app.use(function (err, req, res, next) {
 });
 
 module.exports = app;
+
+async function lookupNamesFromIDInMap(userID) {
+  if (!userIDToNameMap.has(userID)) {
+    res = await client.users.info({ token, user: userID });
+    if (res.ok) {
+      userIDToNameMap.set(userID, res.user.name);
+    }
+  }
+  return userIDToNameMap.get(userID);
+}
