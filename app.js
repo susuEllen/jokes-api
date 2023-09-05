@@ -65,8 +65,10 @@ slackEvents.on("message", async (event) => {
         replyMessage.name = "Buddy";
       } else {
         replyMessage.role = "user";
-        replyMessage.name =
+        var userName =
           (await lookupNamesFromIDInMap(message.user)) || message.user;
+        userName = userName.split(".", 1)[0];
+        replyMessage.name = userName;
       }
       conversationReplies.push(replyMessage);
     }
