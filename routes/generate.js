@@ -4,6 +4,9 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 const words = require("./words");
+const Cache = require("tmp-cache");
+const riddleWordByThread = new Cache({ max: 1000, maxAge: -1, stale: true });
+
 module.exports = async function (inputMessageJSON) {
   try {
     console.log("inputMessageJSON: " + JSON.stringify(inputMessageJSON));
@@ -44,7 +47,11 @@ function formatInputMessagesInRoleAndContent(inputmessage) {
   return [systemContent, ...inputmessage];
 }
 
-function pickRandomElement() {
+function getWord(gameThreadId) {
+  let word = riddleWordByThread.get(gameThreadId);
+  if (word) {
+    return word;
+  }
   if (!words.length) return null;
   return words[Math.floor(Math.random() * words.length)];
 }
@@ -59,7 +66,7 @@ function selectSystemPrompt(inputmessage) {
     .toLowerCase()
     .includes("gametime!");
 
-  const gameWord = pickRandomElement();
+  const gameWord = getWord(inputmessage[0].id);
   console.log("*** gameWord: " + gameWord);
   if (isGameTime) {
     return `You are a cryptic and mysterious puzzle master bot. Your personality is mysterious. Come up with a riddle clue for the word "${gameWord}" , 
