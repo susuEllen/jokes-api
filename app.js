@@ -59,7 +59,10 @@ slackEvents.on("message", async (event) => {
     const conversationReplies = [];
     for (var i = 0; i < replies.messages.length; i++) {
       var message = replies.messages[i];
-      var replyMessage = { content: replies.messages[i].text };
+      var replyMessage = {
+        id: `${message.user}_${message.thread_ts}`,
+        content: message.text,
+      };
       if (message.user.includes(botUserId)) {
         replyMessage.role = "assistant";
         replyMessage.name = "Buddy";
