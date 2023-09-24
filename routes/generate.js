@@ -3,14 +3,19 @@ const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
-const words = require("./words");
-module.exports = async function (inputMessageJSON) {
+
+module.exports = async function (inputMessageJSON, gameWord = "") {
   try {
     console.log("inputMessageJSON: " + JSON.stringify(inputMessageJSON));
-    const inputMessages = formatInputMessagesInRoleAndContent(inputMessageJSON);
+    const inputMessages = formatInputMessagesInRoleAndContent(
+      inputMessageJSON,
+      gameWord
+    );
     console.log(
       "\n\n ****** formatInputMessagesInRoleAndContent: ****\n\n " +
-        JSON.stringify(inputMessages)
+        JSON.stringify(inputMessages) +
+        "\n\n GameWord:\n" +
+        gameWord
     );
     const completion = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
@@ -34,8 +39,8 @@ module.exports = async function (inputMessageJSON) {
 };
 
 //TODO: format this into format with role and content
-function formatInputMessagesInRoleAndContent(inputmessage) {
-  const selectedSystemPrompt = selectSystemPrompt(inputmessage);
+function formatInputMessagesInRoleAndContent(inputmessage, gameWord = "") {
+  const selectedSystemPrompt = selectSystemPrompt(inputmessage, gameWord);
 
   const systemContent = {
     role: "system",
@@ -44,24 +49,8 @@ function formatInputMessagesInRoleAndContent(inputmessage) {
   return [systemContent, ...inputmessage];
 }
 
-function pickRandomElement() {
-  if (!words.length) return null;
-  return words[Math.floor(Math.random() * words.length)];
-}
-
-function selectSystemPrompt(inputmessage) {
-  //TODO: add logic to select prompt based on input message
-  // const promptCoach = `You are a health coach. You have 10 years of experience helping people develope health habits. You believe daily habits is key to success in building healthy habits. Your personality is positive and encouraging.
-  //  Ask up to 2 questions if you dont have enough information. Respond something helpful to this message ${inputmessage}. `;
-  // const promptFriend = `You are an old friend. You've know the person since college. You are wise, funny but not judgemental. Always ask questions first to get more information. Respond something comforting to this message ${inputmessage}. `;
-
-  const isGameTime = inputmessage[0].content
-    .toLowerCase()
-    .includes("gametime!");
-
-  const gameWord = pickRandomElement();
-  console.log("*** gameWord: " + gameWord);
-  if (isGameTime) {
+function selectSystemPrompt(inputmessage, gameWord = "") {
+  if (gameWord.length > 0) {
     return `You are a cryptic and mysterious puzzle master bot. Your personality is mysterious. Come up with a riddle clue for the word "${gameWord}" , 
     always address the message to name by the sender's name ${inputmessage}. Don't reveal the word in the clue. If sender guesses the word, respond "correct". 
     If sender guesses right, respond with a sentence starts with "Success!". If sender guesses wrong, respond with something quirky to get sender to guess again.`;

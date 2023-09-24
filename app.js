@@ -9,11 +9,13 @@ var logger = require("morgan");
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var apiRouter = require("./routes/api");
+const words = require("./routes/words");
 
 const PORT = process.env.PORT || 3000;
 //TODO: Need to figure out where to park this, if we want to install this in dev/ staging.
 const BOT_ID = "B04LLKT2R5M";
 const botUserId = "U04M3KY743E";
+
 var app = express();
 app.use("/health", (req, res, next) => {
   res.status(200);
@@ -22,6 +24,7 @@ app.use("/health", (req, res, next) => {
 
 const token = process.env.BOT_TOKEN;
 const userIDToNameMap = new Map();
+const threadIDToGameWordMap = new Map();
 choice = "";
 
 // Allows our app to receive messages that occur on channels
@@ -80,6 +83,10 @@ slackEvents.on("message", async (event) => {
     );
 
     console.log(event.user);
+    var firstMessage = replies.messages[0];
+    console.log("firstMessage: " + JSON.stringify(firstMessage));
+    var isGameThread = firstMessage.text.toLowerCase().includes("gametime!");
+
     var lastMessage = replies.messages[replies.messages.length - 1];
     var lastMessagedUser = lastMessage["user"];
 
@@ -91,17 +98,37 @@ slackEvents.on("message", async (event) => {
       return;
     }
 
-    smartResponse = await generate(conversationReplies);
+    //TODO: refactor gameWord logic out of app.js later
+    var gameWordStored = threadIDToGameWordMap.get(firstMessage.ts);
+    var gameWord = "";
+    if (isGameThread && !gameWordStored) {
+      console.log(
+        "1. isGameThread: " +
+          isGameThread +
+          " gameWordStored: " +
+          gameWordStored
+      );
+      gameWord = pickRandomElement();
+      threadIDToGameWordMap.set(firstMessage.ts, gameWord);
+      console.log(threadIDToGameWordMap);
+    } else if (isGameThread && gameWordStored) {
+      console.log(
+        "2. isGameThread: " +
+          isGameThread +
+          " gameWordStored: " +
+          gameWordStored
+      );
+      gameWord = gameWordStored;
+    }
+
+    console.log("*** gameWord: " + gameWord);
+    console.log("*** key - ts: " + firstMessage.ts);
+    //END TODO
+
+    smartResponse = await generate(conversationReplies, gameWord);
     console.log(">>>>\nsmartResponse\n" + smartResponse + "\n>>>>\n");
 
     if (smartResponse) {
-      // if (smartResponse.includes(":")) {
-      //   smartResponse = smartResponse.split(":", 2)[1];
-      // }
-      // smartResponse = smartResponse.replace(/<(U[^>]+)>/, "<@$1>");
-
-      //<U37T7TB0F>: <@U04M3KY743E> create a riddle where the answer is “cottonball”, let people guess, do not share the answer untill 5 guesses or until someone guess “cottonball”.
-
       client.chat.postMessage({
         token,
         channel: event.channel,
@@ -166,4 +193,9 @@ async function lookupNamesFromIDInMap(userID) {
     }
   }
   return userIDToNameMap.get(userID);
+}
+
+function pickRandomElement() {
+  if (!words.length) return null;
+  return words[Math.floor(Math.random() * words.length)];
 }
